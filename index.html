@@ -1314,7 +1314,376 @@ body {
   .admin-sidebar { width: 100%; flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--border); padding: 0.5rem; }
   .form-row { grid-template-columns: 1fr; }
 }
-  </style>
+  
+/* ===================== RATING POPUP ===================== */
+.rating-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(6px);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.rating-popup.show { display: flex; }
+.rating-box {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: 1.8rem 1.5rem 2rem;
+  width: 100%;
+  max-width: 480px;
+  text-align: center;
+  animation: slideUp 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.rating-box h3 {
+  font-family: var(--font-head);
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+.rating-box p {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.2rem;
+}
+.rating-stars {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-bottom: 1.4rem;
+}
+.rating-stars button {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  color: rgba(255,255,255,0.2);
+  transition: color 0.15s, transform 0.15s;
+  padding: 0.2rem;
+  line-height: 1;
+}
+.rating-stars button.active,
+.rating-stars button:hover { color: var(--accent-gold); transform: scale(1.2); }
+.rating-actions {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: center;
+}
+.rating-actions button {
+  padding: 0.65rem 1.6rem;
+  border-radius: 99px;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.rating-actions button:active { opacity: 0.75; }
+.rating-submit {
+  background: var(--gradient-btn);
+  color: #fff;
+}
+.rating-skip {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+}
+
+/* ===================== LIVE CHAT ===================== */
+/*
+  LAYOUT STRATEGY:
+  Portrait  → full-width sheet slides up from BELOW the video (inside player-modal)
+  Landscape → side panel 280px from the right edge of the video wrapper
+*/
+
+/* The chat lives OUTSIDE video-wrapper, inside player-modal */
+.live-chat-panel {
+  position: fixed;        /* fixed so it sits above everything in both orientations */
+  left: 0; right: 0;
+  bottom: 0;
+  height: 55vh;
+  max-height: 55vh;
+  background: rgba(10,13,25,0.97);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border);
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 9000;          /* above player modal (z 1000) */
+  transform: translateY(110%);
+  transition: transform 0.32s cubic-bezier(0.4,0,0.2,1);
+  pointer-events: none;
+}
+.live-chat-panel.open {
+  transform: translateY(0);
+  pointer-events: all;
+}
+
+/* Landscape: become a tall right-side panel */
+@media (orientation: landscape) {
+  .live-chat-panel {
+    left: auto;
+    top: 0; right: 0; bottom: 0;
+    width: 280px;
+    height: 100%;
+    max-height: 100%;
+    border-top: none;
+    border-left: 1px solid var(--border);
+    border-radius: 0;
+    transform: translateX(110%);
+  }
+  .live-chat-panel.open { transform: translateX(0); }
+}
+
+/* Drag handle (portrait only) */
+.chat-drag-handle {
+  width: 40px; height: 4px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 2px;
+  margin: 10px auto 6px;
+  flex-shrink: 0;
+}
+@media (orientation: landscape) { .chat-drag-handle { display: none; } }
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.chat-header-title {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-family: var(--font-head);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.chat-close-btn {
+  background: rgba(255,255,255,0.07);
+  border: none; border-radius: 50%;
+  color: var(--text-secondary);
+  cursor: pointer;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem;
+  transition: background 0.2s;
+}
+.chat-close-btn:hover { background: rgba(255,255,255,0.15); }
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.7rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  -webkit-overflow-scrolling: touch;
+}
+.chat-messages::-webkit-scrollbar { width: 2px; }
+.chat-msg {
+  font-size: 0.8rem;
+  line-height: 1.45;
+  padding: 0.45rem 0.65rem;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.05);
+  word-break: break-word;
+}
+.chat-msg .chat-name {
+  font-weight: 700;
+  font-size: 0.72rem;
+  display: block;
+  margin-bottom: 2px;
+  color: var(--accent3);
+}
+.chat-msg.admin-msg {
+  background: rgba(245,0,87,0.15);
+  border: 1px solid rgba(245,0,87,0.28);
+}
+.chat-msg.admin-msg .chat-name { color: var(--accent-pink); }
+.chat-msg.pinned-msg {
+  background: rgba(255,215,64,0.1);
+  border: 1px solid rgba(255,215,64,0.3);
+  position: sticky;
+  top: 0;
+}
+.chat-msg.pinned-msg .chat-name { color: var(--accent-gold); }
+.pinned-label {
+  font-size: 0.65rem; color: var(--accent-gold);
+  font-weight: 700; margin-bottom: 2px; display: block;
+}
+.chat-name-row {
+  padding: 0.5rem 0.9rem 0.3rem;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.chat-name-row input {
+  width: 100%;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+.chat-name-row input:focus { outline: none; border-color: var(--accent); }
+.chat-input-row {
+  padding: 0.5rem 0.9rem 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.chat-input-row input {
+  flex: 1;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  min-width: 0;
+}
+.chat-input-row input:focus { outline: none; border-color: var(--accent); }
+.chat-send-btn {
+  background: var(--accent);
+  border: none; border-radius: 10px;
+  color: #fff; cursor: pointer;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.88rem;
+  flex-shrink: 0;
+  transition: opacity 0.2s, transform 0.15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.chat-send-btn:active { opacity: 0.8; transform: scale(0.95); }
+
+/* Chat toggle button — floats over controls */
+.chat-toggle-btn {
+  position: absolute;
+  top: 10px; right: 10px;
+  z-index: 22;
+  background: rgba(10,13,25,0.75);
+  border: 1px solid rgba(124,77,255,0.5);
+  border-radius: 99px;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 5px 11px 5px 8px;
+  display: none;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background 0.2s, border-color 0.2s;
+  letter-spacing: 0.02em;
+}
+.chat-toggle-btn:hover,
+.chat-toggle-btn.active { background: var(--accent); border-color: var(--accent); }
+.chat-toggle-btn.show { display: flex; }
+
+
+/* ── Visibility toggle in admin form ── */
+.visibility-toggle-wrap {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+}
+.vis-btn {
+  flex: 1;
+  padding: 0.55rem 0.8rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+  transition: all 0.2s;
+}
+.vis-btn.active[data-val="public"] {
+  background: rgba(0,230,118,0.15);
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+}
+.vis-btn.active[data-val="private"] {
+  background: rgba(245,0,87,0.15);
+  border-color: var(--accent-pink);
+  color: var(--accent-pink);
+}
+.form-hint {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  margin-top: 0.35rem;
+}
+/* Private badge in admin lecture list */
+.vis-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 0.68rem; font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 99px;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+.vis-badge.private {
+  background: rgba(245,0,87,0.18);
+  color: var(--accent-pink);
+  border: 1px solid rgba(245,0,87,0.3);
+}
+.vis-badge.public {
+  background: rgba(0,230,118,0.12);
+  color: var(--accent-green);
+  border: 1px solid rgba(0,230,118,0.2);
+}
+
+
+/* Visibility quick-toggle in admin list */
+.action-btn.vis-toggle { color: var(--accent-green); }
+.action-btn.vis-toggle.private { color: var(--accent-pink); }
+
+
+/* ── Rating display on cards & info panel ── */
+.card-rating {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 0.72rem; color: var(--accent-gold);
+  margin-top: 4px;
+}
+.card-rating .star-filled { color: var(--accent-gold); }
+.card-rating .star-empty  { color: rgba(255,215,64,0.25); }
+.card-rating .rating-count {
+  color: var(--text-muted); font-size: 0.68rem; margin-left: 2px;
+}
+/* In player info panel */
+.player-rating-row {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 0.6rem;
+  flex-wrap: wrap;
+}
+.player-rating-stars {
+  display: flex; gap: 2px; font-size: 1.1rem;
+}
+.player-rating-stars span.star-filled { color: var(--accent-gold); }
+.player-rating-stars span.star-empty  { color: rgba(255,215,64,0.2); }
+.player-rating-avg {
+  font-family: var(--font-head);
+  font-size: 0.9rem; font-weight: 700;
+  color: var(--accent-gold);
+}
+.player-rating-count {
+  font-size: 0.75rem; color: var(--text-muted);
+}
+.player-rating-row.no-ratings .player-rating-count { font-style: italic; }
+
+</style>
 </head>
 <body>
 
@@ -1557,6 +1926,10 @@ body {
       <div class="live-countdown-timer" id="countdownTimer">--:--:--</div>
       <div class="live-countdown-sub">Get ready — this lecture will begin soon</div>
     </div>
+    <!-- Chat toggle button (visible during live, floats over video) -->
+    <button class="chat-toggle-btn" id="chatToggleBtn" data-no-hide>
+      <i class="fa-solid fa-comment"></i> LIVE CHAT
+    </button>
     <div class="controls-overlay" id="controlsOverlay">
       <div class="center-controls">
         <button class="ctrl-btn big" id="seekBack" data-no-hide><i class="fa-solid fa-rotate-left"></i><span>10</span></button>
@@ -1615,6 +1988,17 @@ body {
       <span><i class="fa-regular fa-clock"></i> <span id="lectureDuration">--</span></span>
       <span><i class="fa-regular fa-calendar"></i> <span id="lectureDate">--</span></span>
     </div>
+    <div class="player-rating-row no-ratings" id="playerRatingRow">
+      <div class="player-rating-stars" id="playerRatingStars">
+        <span class="star-empty">&#9733;</span>
+        <span class="star-empty">&#9733;</span>
+        <span class="star-empty">&#9733;</span>
+        <span class="star-empty">&#9733;</span>
+        <span class="star-empty">&#9733;</span>
+      </div>
+      <span class="player-rating-avg" id="playerRatingAvg" style="display:none"></span>
+      <span class="player-rating-count" id="playerRatingCount">No ratings yet</span>
+    </div>
     <div class="watch-progress-wrap" id="watchProgressWrap" style="display:none">
       <div class="watch-progress-bar">
         <div class="watch-progress-fill" id="watchProgressFill"></div>
@@ -1624,6 +2008,44 @@ body {
   </div>
 </div>
 
+
+<!-- ==================== LIVE CHAT PANEL ==================== -->
+<div class="live-chat-panel" id="liveChatPanel">
+  <div class="chat-drag-handle"></div>
+  <div class="chat-header">
+    <div class="chat-header-title">
+      <span class="live-dot"></span> Live Chat
+    </div>
+    <button class="chat-close-btn" id="chatCloseBtn"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="chat-messages" id="chatMessages"></div>
+  <div class="chat-name-row" id="chatNameRow" style="display:none">
+    <input id="chatNameInput" placeholder="Your name" maxlength="20" />
+  </div>
+  <div class="chat-input-row">
+    <input id="chatInput" placeholder="Say something..." maxlength="200" />
+    <button class="chat-send-btn" id="chatSendBtn"><i class="fa-solid fa-paper-plane"></i></button>
+  </div>
+</div>
+
+<!-- ==================== RATING POPUP ==================== -->
+<div class="rating-popup" id="ratingPopup">
+  <div class="rating-box">
+    <h3>Rate this Lecture</h3>
+    <p>How helpful was this lecture?</p>
+    <div class="rating-stars" id="ratingStars">
+      <button data-star="1" title="Poor">&#9733;</button>
+      <button data-star="2" title="Fair">&#9733;</button>
+      <button data-star="3" title="Good">&#9733;</button>
+      <button data-star="4" title="Very Good">&#9733;</button>
+      <button data-star="5" title="Excellent">&#9733;</button>
+    </div>
+    <div class="rating-actions">
+      <button class="rating-submit" id="ratingSubmitBtn">Submit Rating</button>
+      <button class="rating-skip" id="ratingSkipBtn">Skip</button>
+    </div>
+  </div>
+</div>
 <!-- ==================== ADMIN SECTION ==================== -->
 <div class="admin-section" id="adminSection">
 
@@ -1668,6 +2090,7 @@ body {
       <aside class="admin-sidebar">
         <button class="admin-nav-item active" data-admin-tab="lectures"><i class="fa-solid fa-film"></i> Lectures</button>
         <button class="admin-nav-item" data-admin-tab="add"><i class="fa-solid fa-plus"></i> Add Lecture</button>
+        <button class="admin-nav-item" data-admin-tab="chat"><i class="fa-solid fa-comment"></i> Live Chat</button>
       </aside>
       <div class="admin-content">
         <!-- LECTURES TAB -->
@@ -1743,6 +2166,19 @@ body {
                 <label>Duration (seconds)</label>
                 <input type="number" id="fDuration" placeholder="e.g. 3600" min="0" />
               </div>
+              <div class="form-group">
+                <label>Visibility</label>
+                <div class="visibility-toggle-wrap" id="visibilityToggleWrap">
+                  <button type="button" class="vis-btn active" id="visPublicBtn" data-val="public">
+                    <i class="fa-solid fa-globe"></i> Public
+                  </button>
+                  <button type="button" class="vis-btn" id="visPrivateBtn" data-val="private">
+                    <i class="fa-solid fa-lock"></i> Private
+                  </button>
+                  <input type="hidden" id="fVisibility" value="public" />
+                </div>
+                <p class="form-hint" id="visHint">Visible to everyone on the website.</p>
+              </div>
             </div>
             <div class="form-actions">
               <button type="button" class="btn-secondary" id="cancelEditBtn">Cancel</button>
@@ -1751,6 +2187,38 @@ body {
               </button>
             </div>
           </form>
+        </div>
+        <!-- LIVE CHAT ADMIN TAB -->
+        <div class="admin-tab" id="tab-chat">
+          <div class="admin-section-header">
+            <h2>Live Chat Control</h2>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:1rem;max-width:500px;">
+            <div class="form-group">
+              <label>Select Lecture (Live)</label>
+              <select id="adminChatLectureSelect" style="width:100%">
+                <option value="">-- Select a live lecture --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Send Admin Message</label>
+              <div style="display:flex;gap:0.5rem">
+                <input type="text" id="adminChatMsg" placeholder="Type admin message..." style="flex:1" />
+                <button class="btn-primary sm" id="adminChatSendBtn"><i class="fa-solid fa-paper-plane"></i> Send</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Pin a Message (by message ID)</label>
+              <div style="display:flex;gap:0.5rem">
+                <input type="text" id="adminPinMsgId" placeholder="Message doc ID..." style="flex:1" />
+                <button class="btn-primary sm" id="adminPinBtn"><i class="fa-solid fa-thumbtack"></i> Pin</button>
+              </div>
+            </div>
+            <button class="btn-danger sm" id="adminDeleteChatBtn" style="align-self:flex-start">
+              <i class="fa-solid fa-trash"></i> Delete All Chat Messages
+            </button>
+            <div id="adminChatStatus" style="font-size:0.8rem;color:var(--text-secondary)"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1786,7 +2254,8 @@ body {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
   getFirestore, collection, getDocs, addDoc, doc, getDoc,
-  updateDoc, deleteDoc, query, where, serverTimestamp, Timestamp
+  updateDoc, deleteDoc, query, where, orderBy, onSnapshot,
+  serverTimestamp, Timestamp, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // ===================== FIREBASE (single instance) =====================
@@ -1927,7 +2396,9 @@ function renderSearchResults(results) {
 async function fetchLectures() {
   try {
     const snap = await getDocs(collection(db, 'lectures'));
-    allLectures = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Store ALL lectures (admin needs them), public list excludes private
+    const _all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allLectures = _all.filter(l => l.visibility !== 'private');
   } catch (e) {
     console.warn('Could not fetch lectures:', e);
     allLectures = getSampleLectures();
@@ -1990,6 +2461,7 @@ function renderLiveLectures() {
           <div class="card-subject">${l.subject || 'General'}</div>
           <div class="card-title">${l.title}</div>
           <div class="card-date"><i class="fa-regular fa-calendar"></i>${formatDate(l.startTime)}</div>
+          ${ratingStarsHTML(ratingsCache[l.id]?.avg||0, ratingsCache[l.id]?.count||0)}
           <button class="set-reminder-btn ${reminded ? 'reminded' : ''}" data-lecture-id="${l.id}">
             <i class="fa-${reminded ? 'solid' : 'regular'} fa-bell"></i>
             ${reminded ? 'Reminder Set' : 'Set Reminder'}
@@ -2026,6 +2498,7 @@ function renderRecordedLectures() {
           <div class="card-subject">${l.subject || 'General'}</div>
           <div class="card-title">${l.title}</div>
           <div class="card-date"><i class="fa-regular fa-clock"></i>${formatDuration(l.duration)}</div>
+          ${ratingStarsHTML(ratingsCache[l.id]?.avg||0, ratingsCache[l.id]?.count||0)}
         </div>
       </div>`;
   }).join('');
@@ -2208,6 +2681,14 @@ function closePlayer() {
   document.getElementById('controlsOverlay').style.opacity = '';
   document.getElementById('progressWrap').style.display = 'flex';
   document.getElementById('seekFwd').style.opacity = '1';
+  chatClose();
+  chatShowForLive(false);
+  // Show rating on close if watched more than 20%
+  const _vid = document.getElementById('mainVideo');
+  const _dur = _vid.duration || playerLectureData?.duration || 0;
+  if (_dur > 0 && (_vid.currentTime / _dur) > 0.20) {
+    setTimeout(ratingShow, 300);
+  }
 }
 
 function playerShowControls() {
@@ -2443,17 +2924,17 @@ function playerShowLiveUI(active) {
     badge.style.display = 'flex';
     badge.classList.remove('inactive');
     if (progressContainer) progressContainer.style.display = 'block';
-    // Hide normal progress bar for live
     document.getElementById('progressWrap').style.display = 'none';
-    // Disable forward seek button visual hint
     document.getElementById('seekFwd').style.opacity = '0.35';
     document.getElementById('seekFwd').title = 'Cannot seek forward in live stream';
+    chatShowForLive(true);
   } else {
     badge.style.display = 'none';
     if (progressContainer) progressContainer.style.display = 'none';
     document.getElementById('progressWrap').style.display = 'flex';
     document.getElementById('seekFwd').style.opacity = '1';
     document.getElementById('seekFwd').title = '';
+    chatShowForLive(false);
   }
 }
 
@@ -2481,6 +2962,9 @@ function playerFinishLive() {
       updateDoc(doc(db, 'lectures', playerLectureData.id), { mode: 'normal' }).catch(() => {});
     }
   } catch (e) {}
+  // Auto-delete all chat messages now that stream ended
+  if (playerLectureData?.id) chatDeleteAllMessages(playerLectureData.id);
+  chatShowForLive(false);
 }
 
 function playerShowUpcomingThumbnail(thumbnail, subject) {
@@ -2572,6 +3056,8 @@ async function playerOnVideoEnded() {
     playerFinishLive();
   }
   playerSaveProgress(video.duration, 100);
+  // Show rating after a short delay
+  setTimeout(ratingShow, 800);
 }
 
 function playerStartProgressTracking() {
@@ -2721,6 +3207,8 @@ async function initPlayer(id) {
 
   playerStartProgressTracking();
   playerShowControls();
+  // Load rating for this lecture
+  ratingFetchAndDisplay(id);
 }
 
 // ===================== PLAYER EVENT LISTENERS =====================
@@ -2834,6 +3322,311 @@ function setupPlayerEvents() {
   });
 }
 
+
+// ==============================================
+// RATING MODULE
+// ==============================================
+
+let ratingSelected = 0;
+let ratingPendingAfterClose = false;
+
+// ─ Fetch avg rating for a lecture and update UI ─
+async function ratingFetchAndDisplay(lectureId) {
+  // Reset to loading state
+  ratingRenderPlayerStars(0, 0);
+  try {
+    const q = query(collection(db, 'ratings'), where('lectureId', '==', lectureId));
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      ratingRenderPlayerStars(0, 0);
+      return { avg: 0, count: 0 };
+    }
+    const ratings = snap.docs.map(d => d.data().rating).filter(r => typeof r === 'number');
+    const count = ratings.length;
+    const avg = count ? ratings.reduce((a,b) => a+b, 0) / count : 0;
+    ratingRenderPlayerStars(avg, count);
+    return { avg, count };
+  } catch (e) {
+    return { avg: 0, count: 0 };
+  }
+}
+
+function ratingRenderPlayerStars(avg, count) {
+  const starsEl = document.getElementById('playerRatingStars');
+  const avgEl   = document.getElementById('playerRatingAvg');
+  const countEl = document.getElementById('playerRatingCount');
+  const rowEl   = document.getElementById('playerRatingRow');
+  if (!starsEl) return;
+
+  starsEl.innerHTML = [1,2,3,4,5].map(i => {
+    if (avg >= i - 0.25) return '<span class="star-filled">&#9733;</span>';
+    if (avg >= i - 0.75) return '<span class="star-filled" style="opacity:0.55">&#9733;</span>';
+    return '<span class="star-empty">&#9733;</span>';
+  }).join('');
+
+  if (count > 0) {
+    avgEl.style.display = 'inline';
+    avgEl.textContent = avg.toFixed(1);
+    countEl.textContent = `(${count} rating${count !== 1 ? 's' : ''})`;
+    rowEl.classList.remove('no-ratings');
+  } else {
+    avgEl.style.display = 'none';
+    countEl.textContent = 'No ratings yet';
+    rowEl.classList.add('no-ratings');
+  }
+}
+
+// ─ Build inline star HTML for cards ─
+function ratingStarsHTML(avg, count) {
+  if (!count) return '';
+  const stars = [1,2,3,4,5].map(i => {
+    if (avg >= i - 0.25) return '<span class="star-filled">&#9733;</span>';
+    if (avg >= i - 0.75) return '<span class="star-filled" style="opacity:0.55">&#9733;</span>';
+    return '<span class="star-empty">&#9733;</span>';
+  }).join('');
+  return `<div class="card-rating">${stars}<span class="rating-count">${avg.toFixed(1)} (${count})</span></div>`;
+}
+
+// Cache: lectureId → { avg, count }
+const ratingsCache = {};
+
+async function ratingLoadAllForCards() {
+  try {
+    const snap = await getDocs(collection(db, 'ratings'));
+    const map = {};
+    snap.forEach(d => {
+      const { lectureId, rating } = d.data();
+      if (!lectureId || typeof rating !== 'number') return;
+      if (!map[lectureId]) map[lectureId] = [];
+      map[lectureId].push(rating);
+    });
+    Object.entries(map).forEach(([id, arr]) => {
+      ratingsCache[id] = {
+        avg: arr.reduce((a,b) => a+b, 0) / arr.length,
+        count: arr.length
+      };
+    });
+  } catch (e) { /* offline — no ratings shown */ }
+}
+
+function ratingInit() {
+  const stars = document.querySelectorAll('#ratingStars button');
+  stars.forEach(btn => {
+    btn.addEventListener('mouseenter', () => ratingHighlight(+btn.dataset.star));
+    btn.addEventListener('mouseleave', () => ratingHighlight(ratingSelected));
+    btn.addEventListener('click', () => {
+      ratingSelected = +btn.dataset.star;
+      ratingHighlight(ratingSelected);
+    });
+    // Touch support
+    btn.addEventListener('touchend', e => {
+      e.preventDefault();
+      ratingSelected = +btn.dataset.star;
+      ratingHighlight(ratingSelected);
+    });
+  });
+  document.getElementById('ratingSubmitBtn').addEventListener('click', ratingSubmit);
+  document.getElementById('ratingSkipBtn').addEventListener('click', ratingDismiss);
+}
+
+function ratingHighlight(n) {
+  document.querySelectorAll('#ratingStars button').forEach((btn, i) => {
+    btn.classList.toggle('active', i < n);
+  });
+}
+
+function ratingShow() {
+  if (!playerLectureData?.id) return;
+  // Only show once per lecture per device
+  if (localStorage.getItem('rated_' + playerLectureData.id)) return;
+  ratingSelected = 0;
+  ratingHighlight(0);
+  document.getElementById('ratingPopup').classList.add('show');
+}
+
+function ratingDismiss() {
+  document.getElementById('ratingPopup').classList.remove('show');
+  ratingPendingAfterClose = false;
+}
+
+async function ratingSubmit() {
+  if (ratingSelected === 0) { showToast('⭐ Please select a star rating'); return; }
+  if (!playerLectureData?.id) return;
+  try {
+    await addDoc(collection(db, 'ratings'), {
+      lectureId: playerLectureData.id,
+      lectureTitle: playerLectureData.title || '',
+      rating: ratingSelected,
+      createdAt: serverTimestamp()
+    });
+    localStorage.setItem('rated_' + playerLectureData.id, '1');
+    showToast('⭐ Thanks for your rating!');
+    // Refresh display in player + update cache
+    const lid = playerLectureData.id;
+    if (!ratingsCache[lid]) ratingsCache[lid] = { avg: ratingSelected, count: 1 };
+    else {
+      const { avg, count } = ratingsCache[lid];
+      ratingsCache[lid] = { avg: (avg * count + ratingSelected) / (count + 1), count: count + 1 };
+    }
+    ratingRenderPlayerStars(ratingsCache[lid].avg, ratingsCache[lid].count);
+  } catch (e) {
+    localStorage.setItem('rated_' + playerLectureData.id, '1');
+    showToast('⭐ Rating saved!');
+  }
+  ratingDismiss();
+}
+
+// ==============================================
+// LIVE CHAT MODULE
+// ==============================================
+
+let chatUnsubscribe = null;
+let chatOpen = false;
+let chatUserName = localStorage.getItem('chatUserName') || '';
+
+function chatInit() {
+  document.getElementById('chatToggleBtn').addEventListener('click', e => {
+    e.stopPropagation();
+    chatToggle();
+  });
+  document.getElementById('chatCloseBtn').addEventListener('click', e => {
+    e.stopPropagation();
+    chatClose();
+  });
+  document.getElementById('chatSendBtn').addEventListener('click', e => {
+    e.stopPropagation();
+    chatSend();
+  });
+  document.getElementById('chatInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); chatSend(); }
+  });
+  document.getElementById('chatNameInput').addEventListener('input', e => {
+    chatUserName = e.target.value.trim();
+    localStorage.setItem('chatUserName', chatUserName);
+  });
+}
+
+function chatOpen2(lectureId) {
+  // Subscribe to messages
+  if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
+  const messagesRef = collection(db, 'liveChats', lectureId, 'messages');
+  const q = query(messagesRef, orderBy('time', 'asc'));
+  chatUnsubscribe = onSnapshot(q, snapshot => {
+    chatRenderMessages(snapshot);
+  }, err => console.warn('Chat error:', err));
+
+  // Show name row if no name saved
+  const nameRow = document.getElementById('chatNameRow');
+  const nameInput = document.getElementById('chatNameInput');
+  if (!chatUserName) {
+    nameRow.style.display = 'flex';
+    nameInput.value = '';
+  } else {
+    nameRow.style.display = 'none';
+    nameInput.value = chatUserName;
+  }
+}
+
+function chatToggle() {
+  chatOpen = !chatOpen;
+  document.getElementById('liveChatPanel').classList.toggle('open', chatOpen);
+  document.getElementById('chatToggleBtn').classList.toggle('active', chatOpen);
+  if (chatOpen && playerLectureData?.id) chatOpen2(playerLectureData.id);
+  if (!chatOpen && chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
+}
+
+function chatClose() {
+  chatOpen = false;
+  document.getElementById('liveChatPanel').classList.remove('open');
+  document.getElementById('chatToggleBtn')?.classList.remove('active');
+  if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
+}
+
+function chatRenderMessages(snapshot) {
+  const container = document.getElementById('chatMessages');
+  const wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
+  container.innerHTML = '';
+
+  // Render pinned first (sticky top)
+  snapshot.forEach(docSnap => {
+    const msg = docSnap.data();
+    if (msg.pinned) container.appendChild(chatCreateMsgEl(msg, docSnap.id, true));
+  });
+  // Then normal messages
+  snapshot.forEach(docSnap => {
+    const msg = docSnap.data();
+    if (!msg.pinned) container.appendChild(chatCreateMsgEl(msg, docSnap.id, false));
+  });
+
+  if (wasAtBottom) container.scrollTop = container.scrollHeight;
+}
+
+function chatCreateMsgEl(msg, id, isPinned) {
+  const div = document.createElement('div');
+  div.className = 'chat-msg';
+  if (msg.isAdmin) div.classList.add('admin-msg');
+  if (isPinned) div.classList.add('pinned-msg');
+  div.dataset.id = id;
+
+  let html = '';
+  if (isPinned) html += '<span class="pinned-label">📌 Pinned</span>';
+  html += `<span class="chat-name">${escapeHtml(msg.name)}${msg.isAdmin ? ' ⚡' : ''}</span>`;
+  html += escapeHtml(msg.text);
+  div.innerHTML = html;
+  return div;
+}
+
+async function chatSend() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  // Ensure name
+  let name = chatUserName;
+  if (!name) {
+    const nameInput = document.getElementById('chatNameInput');
+    name = nameInput.value.trim();
+    if (!name) { showToast('Please enter your name first'); nameInput.focus(); return; }
+    chatUserName = name;
+    localStorage.setItem('chatUserName', name);
+    document.getElementById('chatNameRow').style.display = 'none';
+  }
+
+  if (!playerLectureData?.id) return;
+  input.value = '';
+  try {
+    await addDoc(collection(db, 'liveChats', playerLectureData.id, 'messages'), {
+      name,
+      text,
+      time: Date.now(),
+      isAdmin: false,
+      pinned: false
+    });
+  } catch (e) { showToast('Could not send. Check connection.'); input.value = text; }
+}
+
+function chatShowForLive(show) {
+  const btn = document.getElementById('chatToggleBtn');
+  btn.classList.toggle('show', show);
+  if (!show) chatClose();
+}
+
+async function chatDeleteAllMessages(lectureId) {
+  try {
+    const snap = await getDocs(collection(db, 'liveChats', lectureId, 'messages'));
+    if (snap.empty) return;
+    const batch = writeBatch(db);
+    snap.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+  } catch (e) { console.warn('Chat delete failed:', e); }
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 // ==============================================
 // ADMIN MODULE
 // ==============================================
@@ -2912,14 +3705,21 @@ function adminRenderLectureList() {
     const modeBadge = l.mode === 'live'
       ? '<span class="mode-badge live">🔴 LIVE</span>'
       : '<span class="mode-badge normal">✅ Recorded</span>';
+    const isPrivate = l.visibility === 'private';
+    const visBadge = isPrivate
+      ? '<span class="vis-badge private"><i class="fa-solid fa-lock"></i> Private</span>'
+      : '<span class="vis-badge public"><i class="fa-solid fa-globe"></i> Public</span>';
     return `
       <div class="admin-lect-item" data-id="${l.id}">
         <img class="admin-lect-thumb" src="${thumb}" alt="${l.title}" onerror="this.src='${adminGetDefaultThumb(l.subject)}'"/>
         <div class="admin-lect-info">
-          <h4>${l.title}</h4>
+          <h4>${l.title} ${visBadge}</h4>
           <p>${l.subject || 'General'} • ${adminFormatDate(l.startTime)} • ${modeBadge}</p>
         </div>
         <div class="admin-lect-actions">
+          <button class="action-btn vis-toggle ${isPrivate ? 'private' : ''}" title="${isPrivate ? 'Make Public' : 'Make Private'}" data-id="${l.id}" data-vis="${l.visibility || 'public'}">
+            <i class="fa-solid fa-${isPrivate ? 'lock-open' : 'lock'}"></i>
+          </button>
           <button class="action-btn toggle" title="${l.mode === 'live' ? 'Switch to Recorded' : 'Switch to Live'}" data-id="${l.id}" data-mode="${l.mode}">
             <i class="fa-solid fa-${l.mode === 'live' ? 'video-slash' : 'circle-dot'}"></i>
           </button>
@@ -2933,6 +3733,9 @@ function adminRenderLectureList() {
       </div>`;
   }).join('');
 
+  container.querySelectorAll('.action-btn.vis-toggle').forEach(btn => {
+    btn.addEventListener('click', () => adminToggleVisibility(btn.dataset.id, btn.dataset.vis));
+  });
   container.querySelectorAll('.action-btn.toggle').forEach(btn => {
     btn.addEventListener('click', () => adminToggleLiveMode(btn.dataset.id, btn.dataset.mode));
   });
@@ -2947,6 +3750,7 @@ function adminRenderLectureList() {
 function adminResetForm() {
   document.getElementById('lectureForm').reset();
   document.getElementById('editLectureId').value = '';
+  adminSetVisibility('public');
 }
 
 function adminPopulateForm(lecture) {
@@ -2958,6 +3762,7 @@ function adminPopulateForm(lecture) {
   document.getElementById('fVideoUrl').value = lecture.videoUrl || '';
   document.getElementById('fMode').value = lecture.mode || 'normal';
   document.getElementById('fDuration').value = lecture.duration || '';
+  adminSetVisibility(lecture.visibility || 'public');
   if (lecture.startTime) {
     try {
       const d = lecture.startTime.toDate ? lecture.startTime.toDate() : new Date(lecture.startTime);
@@ -2992,6 +3797,7 @@ async function adminSaveLecture() {
   const videoUrl = document.getElementById('fVideoUrl').value.trim();
   const mode = document.getElementById('fMode').value;
   const duration = parseInt(document.getElementById('fDuration').value) || 0;
+  const visibility = document.getElementById('fVisibility').value || 'public';
   const startTimeRaw = document.getElementById('fStartTime').value;
 
   if (!title || !videoUrl) { showToast('⚠️ Title and Video URL are required'); return; }
@@ -3000,7 +3806,7 @@ async function adminSaveLecture() {
   if (startTimeRaw) startTime = Timestamp.fromDate(new Date(startTimeRaw));
 
   const data = {
-    title, subject, description, thumbnail, videoUrl, mode, duration,
+    title, subject, description, thumbnail, videoUrl, mode, duration, visibility,
     ...(startTime && { startTime }),
     updatedAt: serverTimestamp()
   };
@@ -3038,6 +3844,29 @@ function adminConfirmDelete(id) {
   document.getElementById('confirmModal').style.display = 'flex';
 }
 
+function adminSetVisibility(val) {
+  document.getElementById('fVisibility').value = val;
+  document.getElementById('visPublicBtn').classList.toggle('active', val === 'public');
+  document.getElementById('visPrivateBtn').classList.toggle('active', val === 'private');
+  document.getElementById('visHint').textContent = val === 'private'
+    ? 'Hidden from all visitors. Only visible in admin panel.'
+    : 'Visible to everyone on the website.';
+}
+
+async function adminToggleVisibility(id, currentVis) {
+  const newVis = currentVis === 'private' ? 'public' : 'private';
+  try {
+    await updateDoc(doc(db, 'lectures', id), { visibility: newVis });
+    showToast(newVis === 'private' ? '🔒 Lecture set to Private' : '🌐 Lecture set to Public');
+    await adminLoadLectures();
+    await fetchLectures();
+    renderLiveLectures();
+    renderRecordedLectures();
+  } catch (e) {
+    showToast('❌ Error: ' + e.message);
+  }
+}
+
 async function adminToggleLiveMode(id, currentMode) {
   const newMode = currentMode === 'live' ? 'normal' : 'live';
   try {
@@ -3051,6 +3880,10 @@ async function adminToggleLiveMode(id, currentMode) {
 }
 
 function setupAdminEvents() {
+  // Visibility toggle buttons
+  document.getElementById('visPublicBtn')?.addEventListener('click', () => adminSetVisibility('public'));
+  document.getElementById('visPrivateBtn')?.addEventListener('click', () => adminSetVisibility('private'));
+
   document.getElementById('loginBtn').addEventListener('click', () => {
     const id = document.getElementById('loginId').value.trim();
     const pass = document.getElementById('loginPass').value.trim();
@@ -3137,6 +3970,74 @@ function setupAdminEvents() {
 // ==============================================
 // SINGLE DOMContentLoaded INIT
 // ==============================================
+
+// ===================== ADMIN CHAT CONTROLS =====================
+function adminChatPopulateLectures() {
+  const sel = document.getElementById('adminChatLectureSelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">-- Select a live lecture --</option>';
+  allLectures.filter(l => l.mode === 'live').forEach(l => {
+    const opt = document.createElement('option');
+    opt.value = l.id;
+    opt.textContent = l.title;
+    sel.appendChild(opt);
+  });
+}
+
+async function adminChatSend() {
+  const lectureId = document.getElementById('adminChatLectureSelect').value;
+  const text = document.getElementById('adminChatMsg').value.trim();
+  const status = document.getElementById('adminChatStatus');
+  if (!lectureId) { status.textContent = '⚠ Select a lecture first.'; return; }
+  if (!text) { status.textContent = '⚠ Enter a message.'; return; }
+  try {
+    await addDoc(collection(db, 'liveChats', lectureId, 'messages'), {
+      name: 'Admin',
+      text,
+      time: Date.now(),
+      isAdmin: true,
+      pinned: false
+    });
+    document.getElementById('adminChatMsg').value = '';
+    status.textContent = '✓ Message sent!';
+    setTimeout(() => status.textContent = '', 3000);
+  } catch (e) { status.textContent = '✗ Error: ' + e.message; }
+}
+
+async function adminChatPin() {
+  const lectureId = document.getElementById('adminChatLectureSelect').value;
+  const msgId = document.getElementById('adminPinMsgId').value.trim();
+  const status = document.getElementById('adminChatStatus');
+  if (!lectureId || !msgId) { status.textContent = '⚠ Select lecture and enter message ID.'; return; }
+  try {
+    await updateDoc(doc(db, 'liveChats', lectureId, 'messages', msgId), { pinned: true });
+    document.getElementById('adminPinMsgId').value = '';
+    status.textContent = '✓ Message pinned!';
+    setTimeout(() => status.textContent = '', 3000);
+  } catch (e) { status.textContent = '✗ Error: ' + e.message; }
+}
+
+async function adminDeleteChat() {
+  const lectureId = document.getElementById('adminChatLectureSelect').value;
+  const status = document.getElementById('adminChatStatus');
+  if (!lectureId) { status.textContent = '⚠ Select a lecture first.'; return; }
+  if (!confirm('Delete ALL chat messages for this lecture?')) return;
+  await chatDeleteAllMessages(lectureId);
+  status.textContent = '✓ All messages deleted!';
+  setTimeout(() => status.textContent = '', 3000);
+}
+
+function setupAdminChatEvents() {
+  document.getElementById('adminChatSendBtn')?.addEventListener('click', adminChatSend);
+  document.getElementById('adminPinBtn')?.addEventListener('click', adminChatPin);
+  document.getElementById('adminDeleteChatBtn')?.addEventListener('click', adminDeleteChat);
+  document.getElementById('adminChatMsg')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') adminChatSend();
+  });
+  // Populate lecture list when chat tab opens
+  document.querySelector('[data-admin-tab="chat"]')?.addEventListener('click', adminChatPopulateLectures);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
 
   // --- App Navigation ---
@@ -3181,12 +4082,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // --- Setup player events ---
   setupPlayerEvents();
+  // --- Rating + Chat init ---
+  ratingInit();
+  chatInit();
 
   // --- Setup admin events ---
   setupAdminEvents();
+  setupAdminChatEvents();
 
   // --- Load data ---
-  await Promise.all([fetchLectures(), fetchProgress(), fetchReminders()]);
+  await Promise.all([fetchLectures(), fetchProgress(), fetchReminders(), ratingLoadAllForCards()]);
 
   // --- Render home ---
   renderLiveLectures();
