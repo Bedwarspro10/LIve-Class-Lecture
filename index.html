@@ -1945,7 +1945,7 @@ body {
       <i class="fa-solid fa-bell"></i>
       <span class="notif-dot"></span>
     </button>
-    <button class="admin-link" id="adminNavBtn" title="Admin Panel"><i class="fa-solid fa-shield-halved"></i></button>
+    <button class="admin-link" id="adminNavBtn" title="Admin Panel" style="display:none"><i class="fa-solid fa-shield-halved"></i></button>
   </div>
 </nav>
 
@@ -1972,7 +1972,7 @@ body {
     <button class="sidebar-item" data-section="notes"><i class="fa-solid fa-note-sticky"></i> Notes</button>
     <button class="sidebar-item" data-section="community"><i class="fa-solid fa-users"></i> Community</button>
     <button class="sidebar-item" data-section="profile"><i class="fa-solid fa-user"></i> Profile</button>
-    <button class="sidebar-item" id="adminSidebarBtn"><i class="fa-solid fa-shield-halved"></i> Admin Panel</button>
+    <button class="sidebar-item" id="adminSidebarBtn" style="display:none"><i class="fa-solid fa-shield-halved"></i> Admin Panel</button>
   </nav>
 </aside>
 
@@ -2622,6 +2622,13 @@ function updateProfileUI(user) {
   const loggedIn = document.getElementById('profileLoggedIn');
   const loggedOut = document.getElementById('profileLoggedOut');
   if (!loggedIn || !loggedOut) return;
+
+  // Show/hide admin nav buttons based on UID
+  const uid = auth.currentUser?.uid || null;
+  const adminVisible = isAdminUID(uid);
+  document.getElementById('adminNavBtn')?.style.setProperty('display', adminVisible ? 'flex' : 'none');
+  document.getElementById('adminSidebarBtn')?.style.setProperty('display', adminVisible ? 'flex' : 'none');
+
   if (user) {
     loggedIn.style.display = 'block';
     loggedOut.style.display = 'none';
@@ -4068,6 +4075,11 @@ function escapeHtml(str) {
 
 const ADMIN_ID = 'power123';
 const ADMIN_PASS = 'ujjawal2809';
+const ADMIN_UIDS = new Set([
+  'fZG8xCddIobjhAOCbEOYIc1NQqL2',
+  'eTTv9Z5LxjhkThxzF23K5gAhKRb2'
+]);
+function isAdminUID(uid) { return uid && ADMIN_UIDS.has(uid); }
 let adminIsLoggedIn = sessionStorage.getItem('aarambh_admin') === 'true';
 let adminLectures = [];
 let adminDeleteTargetId = null;
@@ -4324,11 +4336,19 @@ function setupAdminEvents() {
     const pass = document.getElementById('loginPass').value.trim();
     const errEl = document.getElementById('loginError');
     if (id === ADMIN_ID && pass === ADMIN_PASS) {
+      // Also verify the Google-logged-in account is an authorized admin UID
+      const uid = auth.currentUser?.uid;
+      if (!isAdminUID(uid)) {
+        errEl.textContent = '⚠ Your Google account is not authorized as admin.';
+        errEl.style.display = 'block';
+        return;
+      }
       sessionStorage.setItem('aarambh_admin', 'true');
       adminIsLoggedIn = true;
       errEl.style.display = 'none';
       adminShowPanel();
     } else {
+      errEl.textContent = 'Invalid ID or password.';
       errEl.style.display = 'block';
     }
   });
