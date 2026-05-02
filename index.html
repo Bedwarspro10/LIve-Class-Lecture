@@ -508,6 +508,55 @@ body {
   display: block;
   background: linear-gradient(135deg, #1a1f35, #0d1120);
 }
+/* ===================== CARD LOCK OVERLAY (logged out) ===================== */
+.card-lock-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  background: rgba(8, 11, 20, 0.72);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  opacity: 0;
+  transition: opacity 0.22s ease;
+  z-index: 5;
+}
+.lecture-card:hover .card-lock-overlay { opacity: 1; }
+.card-lock-overlay .lock-icon {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--gradient-btn);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(124,77,255,0.5);
+}
+.card-lock-overlay .lock-text {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
+/* Small persistent lock badge (bottom-right of thumb, always visible when logged out) */
+.card-lock-badge {
+  position: absolute;
+  bottom: 7px; right: 7px;
+  background: rgba(124,77,255,0.9);
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #fff;
+  display: flex; align-items: center; gap: 4px;
+  z-index: 6;
+  letter-spacing: 0.04em;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
 .card-play-overlay {
   position: absolute;
   inset: 0;
@@ -2612,6 +2661,13 @@ onAuthStateChanged(auth, (user) => {
       sessionStorage.setItem('aarambh_loginShown', 'true');
     }
   }
+  // Re-render cards so lock overlays update instantly on login/logout
+  if (allLectures.length) {
+    renderLiveLectures();
+    renderRecordedLectures();
+    renderAllLectures();
+    renderContinueWatching();
+  }
 });
 
 // ===================== SHARED TOAST =====================
@@ -2738,12 +2794,13 @@ function renderSearchResults(results) {
 // ===================== DATA FETCH =====================
 async function fetchLectures() {
   try {
+    // Public read — no auth required. Firestore rules must allow read on lectures.
     const snap = await getDocs(collection(db, 'lectures'));
-    // Store ALL lectures (admin needs them), public list excludes private
     const _all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     allLectures = _all.filter(l => l.visibility !== 'private');
   } catch (e) {
-    console.warn('Could not fetch lectures:', e);
+    console.warn('Could not fetch lectures from Firestore:', e.message);
+    // Only fall back to sample data so UI is never empty
     allLectures = getSampleLectures();
   }
 }
@@ -2779,6 +2836,21 @@ function getSampleLectures() {
   ];
 }
 
+// ===================== AUTH HELPERS FOR RENDERING =====================
+function isLoggedIn() {
+  if (currentUser) return true;
+  try { return !!JSON.parse(localStorage.getItem('aarambh_user')); } catch(e) { return false; }
+}
+function lockOverlayHTML() {
+  if (isLoggedIn()) return '';
+  return `
+    <div class="card-lock-overlay">
+      <div class="lock-icon"><i class="fa-solid fa-lock"></i></div>
+      <div class="lock-text">Login to Watch</div>
+    </div>
+    <div class="card-lock-badge"><i class="fa-solid fa-lock"></i> Login</div>`;
+}
+
 // ===================== RENDER LIVE =====================
 function renderLiveLectures() {
   const container = document.getElementById('liveList');
@@ -2798,6 +2870,7 @@ function renderLiveLectures() {
         <div class="card-thumb-wrap">
           <img src="${thumb}" alt="${l.title}" onerror="this.src='${getDefaultThumb(l.subject)}'"/>
           <div class="card-play-overlay"><div class="play-circle"><i class="fa-solid fa-play"></i></div></div>
+          ${lockOverlayHTML()}
           ${isLiveNow ? '<div class="live-chip"><i class="fa-solid fa-circle" style="font-size:0.4rem"></i> LIVE</div>' : ''}
         </div>
         <div class="card-body">
@@ -2836,6 +2909,7 @@ function renderRecordedLectures() {
         <div class="card-thumb-wrap">
           <img src="${thumb}" alt="${l.title}" onerror="this.src='${getDefaultThumb(l.subject)}'"/>
           <div class="card-play-overlay"><div class="play-circle"><i class="fa-solid fa-play"></i></div></div>
+          ${lockOverlayHTML()}
         </div>
         <div class="card-body">
           <div class="card-subject">${l.subject || 'General'}</div>
@@ -2901,6 +2975,7 @@ function renderAllLectures() {
         <div class="card-thumb-wrap">
           <img src="${thumb}" alt="${l.title}" onerror="this.src='${getDefaultThumb(l.subject)}'"/>
           <div class="card-play-overlay"><div class="play-circle"><i class="fa-solid fa-play"></i></div></div>
+          ${lockOverlayHTML()}
           ${l.mode === 'live' ? '<div class="live-chip"><i class="fa-solid fa-circle" style="font-size:0.4rem"></i> LIVE</div>' : ''}
         </div>
         <div class="card-body">
@@ -2986,9 +3061,9 @@ let playerIsDragging = false;
 let playerSettingsOpen = false;
 
 function openLecture(lectureId) {
-  // Enforce login — check both in-memory and cached localStorage
-  const user = currentUser || (() => { try { return JSON.parse(localStorage.getItem('aarambh_user')); } catch(e) { return null; } })();
-  if (!user) {
+  // Gate: use Firebase auth state as the definitive source of truth
+  const loggedIn = auth.currentUser !== null || isLoggedIn();
+  if (!loggedIn) {
     window._pendingLectureId = lectureId;
     showLoginOverlay();
     return;
