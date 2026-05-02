@@ -733,6 +733,200 @@ body {
   100% { background-position: -200% 0; }
 }
 
+/* ===================== GOOGLE LOGIN POPUP ===================== */
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  transition: opacity 0.3s ease;
+}
+.login-overlay.hidden { display: none; }
+
+.login-card {
+  width: 90%;
+  max-width: 340px;
+  background: linear-gradient(145deg, #13162b, #0d1120);
+  border: 1px solid rgba(124,77,255,0.25);
+  border-radius: 24px;
+  padding: 2rem 1.8rem 1.8rem;
+  position: relative;
+  box-shadow: 0 0 60px rgba(124,77,255,0.2), 0 20px 60px rgba(0,0,0,0.6);
+  animation: loginSlideUp 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes loginSlideUp {
+  from { transform: translateY(50px) scale(0.95); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.login-close-btn {
+  position: absolute;
+  right: 14px; top: 14px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(240,242,255,0.5);
+  font-size: 0.9rem;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.login-close-btn:hover { background: rgba(255,255,255,0.14); color: var(--text-primary); }
+
+.login-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-bottom: 1.4rem;
+}
+.login-logo-icon {
+  width: 42px; height: 42px;
+  border-radius: 13px;
+  background: var(--gradient-btn);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(124,77,255,0.45);
+}
+.login-logo-text {
+  font-family: var(--font-head);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.login-content { text-align: center; }
+.login-content h2 {
+  font-family: var(--font-head);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 0.4rem;
+}
+.login-content p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.google-login-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1.2rem;
+  border-radius: 12px;
+  border: none;
+  background: #fff;
+  color: #1a1a1a;
+  font-weight: 700;
+  font-size: 0.95rem;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  letter-spacing: 0.01em;
+}
+.google-login-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(0,0,0,0.4); }
+.google-login-btn:active { transform: scale(0.97); }
+.google-login-btn svg { flex-shrink: 0; }
+
+.login-divider {
+  display: flex; align-items: center; gap: 0.8rem;
+  margin: 1.2rem 0 0.5rem;
+}
+.login-divider::before, .login-divider::after {
+  content: ''; flex: 1; height: 1px;
+  background: rgba(255,255,255,0.08);
+}
+.login-divider span { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; }
+
+.login-privacy-note {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 0.8rem;
+  line-height: 1.5;
+}
+
+/* ===================== PROFILE AUTH CARD ===================== */
+.profile-auth-card {
+  margin: 1rem 1.2rem 0;
+  padding: 1.4rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+}
+.profile-auth-card p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.profile-user-avatar {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: var(--gradient-btn);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem;
+  overflow: hidden;
+  border: 3px solid rgba(124,77,255,0.4);
+  flex-shrink: 0;
+}
+.profile-user-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.profile-user-name {
+  font-family: var(--font-head);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.profile-user-email {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: -0.4rem;
+}
+.profile-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.85rem;
+  border-radius: 99px;
+  background: rgba(0,230,118,0.12);
+  border: 1px solid rgba(0,230,118,0.25);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent-green);
+  letter-spacing: 0.05em;
+}
+.logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.4rem;
+  border-radius: 99px;
+  border: 1px solid rgba(244,67,54,0.3);
+  background: rgba(244,67,54,0.1);
+  color: #ff6b6b;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.logout-btn:hover { background: rgba(244,67,54,0.2); border-color: rgba(244,67,54,0.5); }
+
 /* ===================== BOTTOM NAV ===================== */
 .bottom-nav {
   position: fixed;
@@ -1872,19 +2066,78 @@ body {
   <!-- PROFILE SECTION -->
   <section id="section-profile" class="page-section">
     <div class="section-page-header"><h2>Profile</h2></div>
-    <div class="profile-card">
-      <div class="profile-avatar"><i class="fa-solid fa-user"></i></div>
-      <h3>Student</h3>
-      <p>Aarambh Learner</p>
-      <div class="profile-stats">
-        <div><strong id="profileLectures">0</strong><span>Lectures</span></div>
-        <div><strong id="profileHours">0</strong><span>Hours</span></div>
-        <div><strong>4.9</strong><span>Rating</span></div>
+
+    <!-- Logged-in state -->
+    <div id="profileLoggedIn" style="display:none">
+      <div class="profile-auth-card">
+        <div class="profile-user-avatar" id="profileAvatar">
+          <i class="fa-solid fa-user"></i>
+        </div>
+        <div>
+          <div class="profile-user-name" id="profileName">—</div>
+          <div class="profile-user-email" id="profileEmail">—</div>
+        </div>
+        <div class="profile-badge"><i class="fa-solid fa-circle" style="font-size:0.4rem"></i> Logged In</div>
+        <button class="logout-btn" id="googleLogoutBtn">
+          <i class="fa-solid fa-right-from-bracket"></i> Log Out
+        </button>
+      </div>
+      <div class="profile-card" style="margin-top:1rem">
+        <div class="profile-stats">
+          <div><strong id="profileLectures">0</strong><span>Lectures</span></div>
+          <div><strong id="profileHours">0</strong><span>Hours</span></div>
+          <div><strong>4.9</strong><span>Rating</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logged-out state -->
+    <div id="profileLoggedOut">
+      <div class="profile-auth-card">
+        <div class="profile-user-avatar"><i class="fa-solid fa-user"></i></div>
+        <p>Sign in to track your progress, continue watching, and access all lectures.</p>
+        <button class="google-login-btn" id="profileGoogleLoginBtn" style="max-width:260px">
+          <svg width="18" height="18" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.29-8.16 2.29-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            <path fill="none" d="M0 0h48v48H0z"/>
+          </svg>
+          Login with Google
+        </button>
       </div>
     </div>
   </section>
 
 </main>
+
+<!-- ==================== GOOGLE LOGIN POPUP ==================== -->
+<div id="loginOverlay" class="login-overlay hidden">
+  <div class="login-card">
+    <button class="login-close-btn" id="loginCloseBtn"><i class="fa-solid fa-xmark"></i></button>
+    <div class="login-logo">
+      <div class="login-logo-icon"><i class="fa-solid fa-play"></i></div>
+      <span class="login-logo-text">Aarambh</span>
+    </div>
+    <div class="login-content">
+      <h2>Welcome Back 👋</h2>
+      <p>Sign in to access live &amp; recorded lectures, track your progress, and more.</p>
+      <button class="google-login-btn" id="googleLoginBtn">
+        <svg width="20" height="20" viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.29-8.16 2.29-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          <path fill="none" d="M0 0h48v48H0z"/>
+        </svg>
+        Continue with Google
+      </button>
+      <div class="login-divider"><span>Safe &amp; Secure</span></div>
+      <p class="login-privacy-note">We only store your name and email. No passwords, ever.</p>
+    </div>
+  </div>
+</div>
 
 <!-- ==================== BOTTOM NAV ==================== -->
 <nav class="bottom-nav">
@@ -2251,12 +2504,15 @@ body {
 // Firebase shared instance + app + player + admin
 // =============================================
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, collection, getDocs, addDoc, doc, getDoc,
   updateDoc, deleteDoc, query, where, orderBy, onSnapshot,
   serverTimestamp, Timestamp, writeBatch
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 // ===================== FIREBASE (single instance) =====================
 const firebaseConfig = {
@@ -2270,6 +2526,93 @@ const firebaseConfig = {
 };
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
+
+// ===================== FIREBASE AUTH =====================
+const auth = getAuth(firebaseApp);
+const googleProvider = new GoogleAuthProvider();
+let currentUser = null;
+
+function showLoginOverlay() {
+  document.getElementById('loginOverlay').classList.remove('hidden');
+}
+function hideLoginOverlay() {
+  document.getElementById('loginOverlay').classList.add('hidden');
+}
+
+window._googleLogin = async function () {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    const user = result.user;
+    currentUser = { name: user.displayName, email: user.email, photo: user.photoURL };
+    localStorage.setItem('aarambh_user', JSON.stringify(currentUser));
+    hideLoginOverlay();
+    updateProfileUI(currentUser);
+    showToast('✅ Welcome, ' + user.displayName.split(' ')[0] + '!');
+    // If they were trying to open a lecture, proceed
+    if (window._pendingLectureId) {
+      const id = window._pendingLectureId;
+      window._pendingLectureId = null;
+      openLecture(id);
+    }
+  } catch (err) {
+    if (err.code !== 'auth/popup-closed-by-user') {
+      showToast('❌ Login failed. Please try again.');
+    }
+  }
+};
+
+window._googleLogout = async function () {
+  await signOut(auth);
+  currentUser = null;
+  localStorage.removeItem('aarambh_user');
+  updateProfileUI(null);
+  showToast('👋 Logged out successfully.');
+};
+
+function updateProfileUI(user) {
+  const loggedIn = document.getElementById('profileLoggedIn');
+  const loggedOut = document.getElementById('profileLoggedOut');
+  if (!loggedIn || !loggedOut) return;
+  if (user) {
+    loggedIn.style.display = 'block';
+    loggedOut.style.display = 'none';
+    document.getElementById('profileName').textContent = user.name || 'Learner';
+    document.getElementById('profileEmail').textContent = user.email || '';
+    const avatarEl = document.getElementById('profileAvatar');
+    if (user.photo) {
+      avatarEl.innerHTML = `<img src="${user.photo}" alt="${user.name}" referrerpolicy="no-referrer"/>`;
+    } else {
+      avatarEl.innerHTML = '<i class="fa-solid fa-user"></i>';
+    }
+  } else {
+    loggedIn.style.display = 'none';
+    loggedOut.style.display = 'block';
+  }
+}
+
+// Restore from localStorage immediately (before Firebase confirms)
+const _cached = localStorage.getItem('aarambh_user');
+if (_cached) {
+  try { currentUser = JSON.parse(_cached); } catch(e) {}
+}
+
+// Firebase Auth state listener
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    currentUser = { name: user.displayName, email: user.email, photo: user.photoURL };
+    localStorage.setItem('aarambh_user', JSON.stringify(currentUser));
+    updateProfileUI(currentUser);
+  } else {
+    currentUser = null;
+    localStorage.removeItem('aarambh_user');
+    updateProfileUI(null);
+    // Show popup once per session on first visit
+    if (!sessionStorage.getItem('aarambh_loginShown')) {
+      setTimeout(showLoginOverlay, 1200);
+      sessionStorage.setItem('aarambh_loginShown', 'true');
+    }
+  }
+});
 
 // ===================== SHARED TOAST =====================
 function showToast(msg, duration = 3000) {
@@ -2643,6 +2986,13 @@ let playerIsDragging = false;
 let playerSettingsOpen = false;
 
 function openLecture(lectureId) {
+  // Enforce login — check both in-memory and cached localStorage
+  const user = currentUser || (() => { try { return JSON.parse(localStorage.getItem('aarambh_user')); } catch(e) { return null; } })();
+  if (!user) {
+    window._pendingLectureId = lectureId;
+    showLoginOverlay();
+    return;
+  }
   const modal = document.getElementById('playerModal');
   modal.classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -4039,6 +4389,18 @@ function setupAdminChatEvents() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+
+  // --- Google Auth Buttons ---
+  document.getElementById('googleLoginBtn')?.addEventListener('click', window._googleLogin);
+  document.getElementById('profileGoogleLoginBtn')?.addEventListener('click', window._googleLogin);
+  document.getElementById('googleLogoutBtn')?.addEventListener('click', window._googleLogout);
+  document.getElementById('loginCloseBtn')?.addEventListener('click', hideLoginOverlay);
+  // Close overlay on backdrop click
+  document.getElementById('loginOverlay')?.addEventListener('click', (e) => {
+    if (e.target === document.getElementById('loginOverlay')) hideLoginOverlay();
+  });
+  // Restore profile UI from cache on page load
+  if (currentUser) updateProfileUI(currentUser);
 
   // --- App Navigation ---
   document.querySelectorAll('.nav-item[data-section]').forEach(btn => {
