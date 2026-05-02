@@ -2646,16 +2646,27 @@ if (_cached) {
 }
 
 // Firebase Auth state listener
+// ===================== AUTH STATE — UI ONLY =====================
+// ⚠️  This block MUST NOT fetch lectures or control what data is loaded.
+// Lecture loading happens unconditionally in DOMContentLoaded via loadLectures().
 onAuthStateChanged(auth, (user) => {
   if (user) {
     currentUser = { name: user.displayName, email: user.email, photo: user.photoURL };
     localStorage.setItem('aarambh_user', JSON.stringify(currentUser));
     updateProfileUI(currentUser);
+    // Fetch user-specific data now that we have a UID
+    fetchProgress().then(() => {
+      fetchReminders().then(() => {
+        renderContinueWatching(); // re-render with real progress
+      });
+    });
   } else {
     currentUser = null;
     localStorage.removeItem('aarambh_user');
     updateProfileUI(null);
-    // Show popup once per session on first visit
+    progressMap = {};
+    remindersSet = new Set();
+    // Show login popup once per session
     if (!sessionStorage.getItem('aarambh_loginShown')) {
       setTimeout(showLoginOverlay, 1200);
       sessionStorage.setItem('aarambh_loginShown', 'true');
@@ -2792,19 +2803,27 @@ function renderSearchResults(results) {
 }
 
 // ===================== DATA FETCH =====================
-async function fetchLectures() {
+// loadLectures() is ALWAYS called on page load — completely independent of auth state.
+// Firestore rules MUST allow: match /lectures/{id} { allow read: if true; }
+async function loadLectures() {
   try {
-    // Public read — no auth required. Firestore rules must allow read on lectures.
     const snap = await getDocs(collection(db, 'lectures'));
     const _all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     allLectures = _all.filter(l => l.visibility !== 'private');
+    console.log(`✅ Loaded ${allLectures.length} lectures from Firestore`);
   } catch (e) {
-    console.warn('Could not fetch lectures from Firestore:', e.message);
-    // Only fall back to sample data so UI is never empty
-    allLectures = getSampleLectures();
+    // If this throws, your Firestore rules are blocking unauthenticated reads.
+    // Fix: set   allow read: if true;   on the lectures collection.
+    console.error('❌ Firestore lectures fetch failed:', e.code, e.message);
+    allLectures = [];
   }
 }
+
+// Alias kept so all internal admin/reload calls still work
+const fetchLectures = loadLectures;
+
 async function fetchProgress() {
+  if (!auth.currentUser) return; // progress is user-specific, skip if logged out
   try {
     const snap = await getDocs(collection(db, 'progress'));
     snap.docs.forEach(d => {
@@ -2812,29 +2831,20 @@ async function fetchProgress() {
       progressMap[data.lectureId] = { id: d.id, ...data };
     });
   } catch (e) {
-    console.warn('Progress fetch failed:', e);
+    console.warn('Progress fetch failed:', e.message);
   }
 }
 async function fetchReminders() {
+  if (!auth.currentUser) return; // reminders are user-specific
   try {
     const snap = await getDocs(collection(db, 'reminders'));
     snap.docs.forEach(d => remindersSet.add(d.data().lectureId));
   } catch (e) {
-    console.warn('Reminders fetch failed:', e);
+    console.warn('Reminders fetch failed:', e.message);
   }
 }
 
-function getSampleLectures() {
-  const now = Date.now();
-  return [
-    { id: 'sample1', title: 'Life Process in Living Organisms', subject: 'Biology', description: 'Explore biological life processes.', thumbnail: '', videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', mode: 'live', startTime: { toDate: () => new Date(now - 10*60*1000) }, duration: 3600 },
-    { id: 'sample2', title: 'Current Electricity', subject: 'Physics', description: 'Study of electric current and circuits.', thumbnail: '', videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', mode: 'live', startTime: { toDate: () => new Date(now + 24*60*60*1000) }, duration: 3600 },
-    { id: 'sample3', title: 'Chemical Bonding', subject: 'Chemistry', description: 'Ionic, covalent and metallic bonds.', thumbnail: '', videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', mode: 'live', startTime: { toDate: () => new Date(now + 48*60*60*1000) }, duration: 3600 },
-    { id: 'sample4', title: 'Quadratic Equations', subject: 'Mathematics', description: 'Solving quadratic equations.', thumbnail: '', videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', mode: 'normal', duration: 2700 },
-    { id: 'sample5', title: 'Motion in a Straight Line', subject: 'Physics', description: 'Kinematics and equations of motion.', thumbnail: '', videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', mode: 'normal', duration: 3200 },
-    { id: 'sample6', title: 'Cell Biology', subject: 'Biology', description: 'Cell structure and organelles.', thumbnail: '', videoUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', mode: 'normal', duration: 2400 }
-  ];
-}
+// ── getSampleLectures() REMOVED — dummy data was masking real Firestore errors ──
 
 // ===================== AUTH HELPERS FOR RENDERING =====================
 function isLoggedIn() {
@@ -4527,8 +4537,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupAdminEvents();
   setupAdminChatEvents();
 
-  // --- Load data ---
-  await Promise.all([fetchLectures(), fetchProgress(), fetchReminders(), ratingLoadAllForCards()]);
+  // ── LOAD LECTURES UNCONDITIONALLY ──────────────────────────────────
+  // loadLectures() always runs regardless of auth state.
+  // User-specific data (progress, reminders) is loaded inside onAuthStateChanged.
+  await loadLectures();
+  await ratingLoadAllForCards();
 
   // --- Render home ---
   renderLiveLectures();
